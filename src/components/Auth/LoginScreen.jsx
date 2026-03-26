@@ -4,12 +4,11 @@ import PasswordInput from '../UI/PasswordInput'
 
 const INPUT_CLASS = 'w-full px-3.5 py-2.5 text-sm rounded-xl border border-earth-200 dark:border-earth-600 bg-earth-50 dark:bg-earth-700 text-earth-800 dark:text-earth-100 placeholder-earth-400 focus:outline-none focus:border-earth-400 dark:focus:border-earth-500 transition-colors'
 
-export default function LoginScreen({ onLogin, onGoToRegister }) {
-  const [email, setEmail]           = useState('')
-  const [password, setPassword]     = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
-  const [error, setError]           = useState('')
-  const [loading, setLoading]       = useState(false)
+export default function LoginScreen({ onLogin, onGoToRegister, onGoToForgotPassword }) {
+  const [email,     setEmail]     = useState('')
+  const [password,  setPassword]  = useState('')
+  const [error,     setError]     = useState('')
+  const [loading,   setLoading]   = useState(false)
 
   const [theme, setTheme] = useState(() =>
     document.documentElement.classList.contains('dark') ? 'dark' : 'light'
@@ -27,7 +26,7 @@ export default function LoginScreen({ onLogin, onGoToRegister }) {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const result = onLogin({ email, password, rememberMe })
+    const result = await onLogin({ email, password })
     setLoading(false)
     if (!result.ok) setError(result.error)
   }
@@ -69,7 +68,16 @@ export default function LoginScreen({ onLogin, onGoToRegister }) {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-earth-600 dark:text-earth-400 mb-1">Senha</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-earth-600 dark:text-earth-400">Senha</label>
+                <button
+                  type="button"
+                  onClick={onGoToForgotPassword}
+                  className="text-xs text-earth-400 dark:text-earth-500 hover:text-earth-600 dark:hover:text-earth-300 transition-colors"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
               <PasswordInput
                 className={INPUT_CLASS}
                 name="password"
@@ -80,16 +88,6 @@ export default function LoginScreen({ onLogin, onGoToRegister }) {
                 required
               />
             </div>
-
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-earth-300 dark:border-earth-600 accent-earth-500 cursor-pointer"
-              />
-              <span className="text-xs text-earth-500 dark:text-earth-400">Lembrar de mim</span>
-            </label>
 
             {error && (
               <p className="text-xs text-negative dark:text-negative-dark bg-negative-light dark:bg-negative-darkbg px-3 py-2 rounded-lg">

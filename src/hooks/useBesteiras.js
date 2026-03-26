@@ -1,17 +1,34 @@
-import { useState, useCallback } from 'react'
-import { loadBesteiras, saveBesteiras } from '../utils/storage'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 
 export function useBesteiras(userId) {
-  const [config, setConfig] = useState(() => loadBesteiras(userId))
+  const [config, setConfig] = useState(null)
 
-  const saveConfig = useCallback((newConfig) => {
-    setConfig(newConfig)
-    saveBesteiras(userId, newConfig)
+  useEffect(() => {
+    if (!userId) return
+    supabase
+      .from('user_preferences')
+      .select('besteiras_config')
+      .eq('user_id', userId)
+      .single()
+      .then(({ data }) => {
+        if (data?.besteiras_config) setConfig(data.besteiras_config)
+      })
   }, [userId])
 
-  const clearConfig = useCallback(() => {
+  const saveConfig = useCallback(async (newConfig) => {
+    setConfig(newConfig)
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert({ user_id: userId, besteiras_config: newConfig, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    if (error) console.error('Erro ao salvar configuração:', error)
+  }, [userId])
+
+  const clearConfig = useCallback(async () => {
     setConfig(null)
-    saveBesteiras(userId, null)
+    await supabase
+      .from('user_preferences')
+      .upsert({ user_id: userId, besteiras_config: null, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
   }, [userId])
 
   return { config, saveConfig, clearConfig }

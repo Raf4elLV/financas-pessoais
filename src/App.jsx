@@ -15,7 +15,29 @@ import GoalManager from './components/Goals/GoalManager'
 import ProfilePage from './components/Profile/ProfilePage'
 import LoginScreen from './components/Auth/LoginScreen'
 import RegisterScreen from './components/Auth/RegisterScreen'
+import ForgotPasswordScreen from './components/Auth/ForgotPasswordScreen'
+import ResetPasswordScreen from './components/Auth/ResetPasswordScreen'
 
+// ── Clear legacy localStorage data (one-time migration) ───────────────────
+;(function clearLegacyStorage() {
+  const LEGACY_KEYS = ['fin_users', 'fin_session']
+  LEGACY_KEYS.forEach(k => localStorage.removeItem(k))
+  // Clear per-user keys (pattern: fin_*_<uuid>)
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('fin_') && !k.startsWith('fin_onboarded_'))
+    .forEach(k => localStorage.removeItem(k))
+})()
+
+// ── Loading spinner ────────────────────────────────────────────────────────
+function Spinner() {
+  return (
+    <div className="min-h-screen bg-earth-50 dark:bg-earth-900 flex items-center justify-center">
+      <div className="w-8 h-8 rounded-full border-2 border-earth-200 dark:border-earth-700 border-t-earth-500 animate-spin" />
+    </div>
+  )
+}
+
+// ── Authenticated shell ────────────────────────────────────────────────────
 function AppShell({ currentUser, logout, updateProfile, changePassword }) {
   const { theme, toggleTheme } = useTheme(currentUser.id)
   const { isOpen: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useSidebar()
@@ -58,22 +80,52 @@ function AppShell({ currentUser, logout, updateProfile, changePassword }) {
   )
 }
 
+// ── Root ───────────────────────────────────────────────────────────────────
 export default function App() {
-  const { currentUser, register, login, logout, updateProfile, changePassword } = useAuth()
-  const [authScreen, setAuthScreen] = useState('login')
+  const {
+    currentUser,
+    authLoading,
+    authEvent,
+    register,
+    login,
+    logout,
+    forgotPassword,
+    resetPassword,
+    updateProfile,
+    changePassword,
+  } = useAuth()
 
-  if (!currentUser) {
-    return authScreen === 'login'
-      ? <LoginScreen    onLogin={login}       onGoToRegister={() => setAuthScreen('register')} />
-      : <RegisterScreen onRegister={register} onGoToLogin={() => setAuthScreen('login')} />
+  const [authScreen, setAuthScreen] = useState('login') // 'login' | 'register' | 'forgot'
+
+  if (authLoading) return <Spinner />
+
+  // Password recovery flow (triggered by email link)
+  if (authEvent === 'PASSWORD_RECOVERY') {
+    return <ResetPasswordScreen onResetPassword={resetPassword} />
   }
 
+  if (currentUser) {
+    return (
+      <AppShell
+        currentUser={currentUser}
+        logout={logout}
+        updateProfile={updateProfile}
+        changePassword={changePassword}
+      />
+    )
+  }
+
+  if (authScreen === 'register') {
+    return <RegisterScreen onRegister={register} onGoToLogin={() => setAuthScreen('login')} />
+  }
+  if (authScreen === 'forgot') {
+    return <ForgotPasswordScreen onForgotPassword={forgotPassword} onGoToLogin={() => setAuthScreen('login')} />
+  }
   return (
-    <AppShell
-      currentUser={currentUser}
-      logout={logout}
-      updateProfile={updateProfile}
-      changePassword={changePassword}
+    <LoginScreen
+      onLogin={login}
+      onGoToRegister={() => setAuthScreen('register')}
+      onGoToForgotPassword={() => setAuthScreen('forgot')}
     />
   )
 }

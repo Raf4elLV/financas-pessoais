@@ -12,7 +12,7 @@ function Req({ met, text }) {
 /**
  * Mostra requisitos abaixo de campos de senha.
  *
- * Modo padrão (showConfirm=false): exibe "No mínimo 4 caracteres"
+ * Modo padrão (showConfirm=false): exibe "No mínimo 6 caracteres"
  * Modo confirmação (showConfirm=true): exibe "Senhas coincidem" quando confirmValue tem conteúdo
  */
 export default function PasswordRequirements({ value = '', confirmValue, showConfirm = false }) {
@@ -27,7 +27,7 @@ export default function PasswordRequirements({ value = '', confirmValue, showCon
 
   return (
     <div className="mt-1.5">
-      <Req met={value.length >= 4} text="No mínimo 4 caracteres" />
+      <Req met={value.length >= 6} text="No mínimo 6 caracteres" />
     </div>
   )
 }

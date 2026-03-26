@@ -5,14 +5,16 @@ import PhoneInput from '../UI/PhoneInput'
 import PasswordInput from '../UI/PasswordInput'
 import PasswordRequirements from '../UI/PasswordRequirements'
 import ImageCropModal from '../UI/ImageCropModal'
+import EmailVerificationScreen from './EmailVerificationScreen'
 import { INPUT_CLASS, LABEL_CLASS } from '../../utils/ui'
 
 export default function RegisterScreen({ onRegister, onGoToLogin }) {
-  const [form, setForm]           = useState({ name: '', email: '', phone: '', password: '' })
+  const [form, setForm]               = useState({ name: '', email: '', phone: '', password: '' })
   const [avatarBase64, setAvatarBase64] = useState(null)
-  const [cropSrc, setCropSrc]     = useState(null)
-  const [error, setError]         = useState('')
-  const [loading, setLoading]     = useState(false)
+  const [cropSrc, setCropSrc]         = useState(null)
+  const [error, setError]             = useState('')
+  const [loading, setLoading]         = useState(false)
+  const [verifyEmail, setVerifyEmail] = useState(null) // email to verify
   const fileRef = useRef()
 
   const [theme, setTheme] = useState(() =>
@@ -46,12 +48,16 @@ export default function RegisterScreen({ onRegister, onGoToLogin }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    if (form.password.length < 4) { setError('A senha deve ter pelo menos 4 caracteres.'); return }
+    if (form.password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return }
     setLoading(true)
-    const result = onRegister({ ...form, avatarBase64 })
+    const result = await onRegister({ ...form, avatarBase64 })
     setLoading(false)
     if (!result.ok) { setError(result.error); return }
-    onGoToLogin()
+    setVerifyEmail(form.email)
+  }
+
+  if (verifyEmail) {
+    return <EmailVerificationScreen email={verifyEmail} onGoToLogin={onGoToLogin} />
   }
 
   const previewUser = { id: 'preview', name: form.name || 'Novo', avatar: avatarBase64 }
@@ -145,7 +151,7 @@ export default function RegisterScreen({ onRegister, onGoToLogin }) {
                 autoComplete="new-password"
                 value={form.password}
                 onChange={e => set('password', e.target.value)}
-                placeholder="Mínimo 4 caracteres"
+                placeholder="Mínimo 6 caracteres"
                 required
               />
               <PasswordRequirements value={form.password} />
@@ -159,7 +165,7 @@ export default function RegisterScreen({ onRegister, onGoToLogin }) {
 
             <button
               type="submit"
-              disabled={loading || form.password.length < 4}
+              disabled={loading || form.password.length < 6}
               className="w-full py-2.5 text-sm font-medium text-white bg-earth-500 hover:bg-earth-600 disabled:opacity-60 rounded-xl transition-colors"
             >
               {loading ? 'Criando...' : 'Criar Conta'}

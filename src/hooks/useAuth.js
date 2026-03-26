@@ -1,89 +1,186 @@
-import { useState } from 'react'
-import { loadUsers, saveUsers, loadSession, saveSession, clearSession } from '../utils/storage'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+
+// ─── helpers ──────────────────────────────────────────────────────────────
+
+function rowToUser(profile, authUser) {
+  return {
+    id:     authUser.id,
+    email:  authUser.email,
+    name:   profile.name,
+    phone:  profile.phone  || null,
+    avatar: profile.avatar || null,
+  }
+}
+
+async function fetchProfile(authUser) {
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', authUser.id)
+    .single()
+  if (!data) return null
+  return rowToUser(data, authUser)
+}
+
+async function upsertProfile(authUser, updates) {
+  await supabase
+    .from('profiles')
+    .upsert({ id: authUser.id, ...updates }, { onConflict: 'id' })
+}
+
+// ─── hook ─────────────────────────────────────────────────────────────────
 
 export function useAuth() {
-  const [currentUser, setCurrentUser] = useState(() => {
-    const userId = loadSession()
-    if (!userId) return null
-    const users = loadUsers()
-    return users.find(u => u.id === userId) || null
-  })
+  const [currentUser,  setCurrentUser]  = useState(null)
+  const [authLoading,  setAuthLoading]  = useState(true)
+  const [authEvent,    setAuthEvent]    = useState(null) // 'PASSWORD_RECOVERY'
 
-  function register({ name, email, phone, password, avatarBase64 }) {
-    const users = loadUsers()
-    const exists = users.some(u => u.email.toLowerCase() === email.trim().toLowerCase())
-    if (exists) return { ok: false, error: 'Este e-mail já está cadastrado.' }
+  useEffect(() => {
+    // Initial session check
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const profile = await fetchProfile(session.user)
+        setCurrentUser(profile)
+      }
+      setAuthLoading(false)
+    })
 
-    const newUser = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone?.trim() || null,
-      password,
-      avatar: avatarBase64 || null,
-      createdAt: new Date().toISOString(),
-    }
-    saveUsers([...users, newUser])
-    return { ok: true }
-  }
-
-  function login({ email, password, rememberMe = false }) {
-    const users = loadUsers()
-    const user = users.find(
-      u => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password
+    // Auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setAuthEvent('PASSWORD_RECOVERY')
+          return
+        }
+        if (event === 'SIGNED_IN' && session) {
+          // Sync avatar from metadata to profile on first login
+          const meta = session.user.user_metadata || {}
+          if (meta.avatar) {
+            await upsertProfile(session.user, {
+              name:   meta.name  || session.user.email,
+              phone:  meta.phone || null,
+              avatar: meta.avatar,
+            })
+          }
+          const profile = await fetchProfile(session.user)
+          setCurrentUser(profile)
+          setAuthEvent(null)
+          setAuthLoading(false)
+        }
+        if (event === 'SIGNED_OUT') {
+          setCurrentUser(null)
+          setAuthEvent(null)
+        }
+      }
     )
-    if (!user) return { ok: false, error: 'E-mail ou senha incorretos.' }
-    saveSession(user.id, rememberMe)
-    setCurrentUser(user)
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // ── register ────────────────────────────────────────────────────────────
+  async function register({ name, email, phone, password, avatarBase64 }) {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name:   name.trim(),
+          phone:  phone?.trim() || null,
+          avatar: avatarBase64 || null,
+        },
+        emailRedirectTo: window.location.origin,
+      },
+    })
+    if (error) return { ok: false, error: error.message }
     return { ok: true }
   }
 
-  function logout() {
-    clearSession()
-    setCurrentUser(null)
+  // ── login ───────────────────────────────────────────────────────────────
+  async function login({ email, password }) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      if (error.message.toLowerCase().includes('email not confirmed'))
+        return { ok: false, error: 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.' }
+      return { ok: false, error: 'E-mail ou senha incorretos.' }
+    }
+    return { ok: true }
   }
 
-  function updateProfile({ name, email, phone, avatar }) {
-    const users = loadUsers()
-    const idx = users.findIndex(u => u.id === currentUser.id)
-    if (idx === -1) return { ok: false, error: 'Usuário não encontrado.' }
+  // ── logout ──────────────────────────────────────────────────────────────
+  async function logout() {
+    await supabase.auth.signOut()
+  }
 
-    if (email !== undefined) {
-      const normalized = email.trim().toLowerCase()
-      const taken = users.some((u, i) => i !== idx && u.email === normalized)
-      if (taken) return { ok: false, error: 'Este e-mail já está em uso.' }
+  // ── forgotPassword ───────────────────────────────────────────────────────
+  async function forgotPassword(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin,
+    })
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  }
+
+  // ── resetPassword ────────────────────────────────────────────────────────
+  async function resetPassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) return { ok: false, error: error.message }
+    setAuthEvent(null)
+    return { ok: true }
+  }
+
+  // ── updateProfile ────────────────────────────────────────────────────────
+  async function updateProfile({ name, email, phone, avatar }) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { ok: false, error: 'Sessão inválida.' }
+
+    const profileUpdates = {}
+    if (name   !== undefined) profileUpdates.name   = name.trim()
+    if (phone  !== undefined) profileUpdates.phone  = phone?.trim() || null
+    if (avatar !== undefined) profileUpdates.avatar = avatar
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error } = await supabase
+        .from('profiles')
+        .update(profileUpdates)
+        .eq('id', user.id)
+      if (error) return { ok: false, error: error.message }
     }
 
-    const updated = {
-      ...users[idx],
-      ...(name  !== undefined && { name: name.trim() }),
-      ...(email !== undefined && { email: email.trim().toLowerCase() }),
-      ...(phone !== undefined && { phone: phone?.trim() || null }),
-      ...(avatar !== undefined && { avatar }),
+    if (email !== undefined && email.trim().toLowerCase() !== user.email) {
+      const { error } = await supabase.auth.updateUser({ email: email.trim().toLowerCase() })
+      if (error) return { ok: false, error: error.message }
     }
 
-    const next = [...users]
-    next[idx] = updated
-    saveUsers(next)
+    const updated = { ...currentUser, ...profileUpdates }
+    if (email !== undefined) updated.email = email.trim().toLowerCase()
     setCurrentUser(updated)
     return { ok: true }
   }
 
-  function changePassword({ currentPassword, newPassword }) {
-    if (currentUser.password !== currentPassword) return { ok: false, error: 'Senha atual incorreta.' }
-    if (newPassword.length < 4) return { ok: false, error: 'A nova senha deve ter pelo menos 4 caracteres.' }
+  // ── changePassword ───────────────────────────────────────────────────────
+  async function changePassword({ currentPassword, newPassword }) {
+    const { error: authErr } = await supabase.auth.signInWithPassword({
+      email: currentUser.email,
+      password: currentPassword,
+    })
+    if (authErr) return { ok: false, error: 'Senha atual incorreta.' }
 
-    const users = loadUsers()
-    const idx = users.findIndex(u => u.id === currentUser.id)
-    if (idx === -1) return { ok: false, error: 'Usuário não encontrado.' }
-
-    const updated = { ...users[idx], password: newPassword }
-    const next = [...users]
-    next[idx] = updated
-    saveUsers(next)
-    setCurrentUser(updated)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) return { ok: false, error: error.message }
     return { ok: true }
   }
 
-  return { currentUser, register, login, logout, updateProfile, changePassword }
+  return {
+    currentUser,
+    authLoading,
+    authEvent,
+    register,
+    login,
+    logout,
+    forgotPassword,
+    resetPassword,
+    updateProfile,
+    changePassword,
+  }
 }
