@@ -7,15 +7,15 @@ import Card from '../UI/Card'
 import { formatCurrency } from '../../utils/formatters'
 import {
   calcDailyChartData,
-  calcWeeklyForMonthChartData,
+  calcDailyForMonthChartData,
   calcYearlyChartData,
   calcWeeklyChartData,
 } from '../../utils/calculations'
 
 const TITLES = {
   week:  'Evolução Diária',
-  month: 'Evolução Semanal',
-  year:  'Evolução Mensal',
+  month: 'Evolução Mensal',
+  year:  'Evolução Anual',
 }
 
 function CustomTooltip({ active, label, labelMap, chartData }) {
@@ -31,10 +31,13 @@ function CustomTooltip({ active, label, labelMap, chartData }) {
 
   if (income === 0 && expense === 0) return null
 
+  // Usa a data completa (ex: "05/03") quando disponível, senão fallback para o label do eixo
+  const header = point.dateLabel ?? labelMap?.[label] ?? String(label)
+
   return (
     <div className="bg-white dark:bg-earth-800 border border-earth-200 dark:border-earth-700 rounded-2xl p-3.5 shadow-xl text-xs min-w-[170px]">
       <p className="font-semibold text-earth-700 dark:text-earth-200 mb-2.5">
-        {labelMap?.[label] ?? label}
+        {header}
       </p>
 
       {income > 0 && (
@@ -90,7 +93,7 @@ function CustomTooltip({ active, label, labelMap, chartData }) {
 export default function FinancialChart({ transactions, periodType = 'month', periodRef }) {
   const rawData = useMemo(() => {
     if (periodType === 'week')  return calcDailyChartData(transactions, periodRef)
-    if (periodType === 'month') return calcWeeklyForMonthChartData(transactions, periodRef)
+    if (periodType === 'month') return calcDailyForMonthChartData(transactions, periodRef)
     if (periodType === 'year')  return calcYearlyChartData(transactions, periodRef)
     return calcWeeklyChartData(transactions, 13)
   }, [transactions, periodType, periodRef])
@@ -113,13 +116,15 @@ export default function FinancialChart({ transactions, periodType = 'month', per
   const title = TITLES[periodType] || 'Evolução'
 
   const { xTicks, labelMap, xDomain } = useMemo(() => {
-    const xTicks  = rawData.map(d => d.day)
+    const allDays  = rawData.map(d => d.day)
     const labelMap = Object.fromEntries(rawData.map(d => [d.day, d.label]))
-    if (!rawData.length) return { xTicks, labelMap, xDomain: ['auto', 'auto'] }
-    const min  = Math.min(...xTicks)
-    const max  = Math.max(...xTicks)
-    const step = xTicks.length > 1 ? (max - min) / (xTicks.length - 1) : 1
-    return { xTicks, labelMap, xDomain: [min - step / 2, max + step / 2] }
+    if (!rawData.length) return { xTicks: [], labelMap, xDomain: ['auto', 'auto'] }
+    const min  = Math.min(...allDays)
+    const max  = Math.max(...allDays)
+    const step = allDays.length > 1 ? (max - min) / (allDays.length - 1) : 1
+    // Sempre inclui todos os dias como ticks para que o Recharts posicione
+    // as barras em todos os pontos; o tickFormatter omite o texto nos dias sem label.
+    return { xTicks: allDays, labelMap, xDomain: [min - step / 2, max + step / 2] }
   }, [rawData])
 
   const hasData = rawData.some(d => d.income > 0 || d.fixedExpense < 0 || d.variableExpense < 0)
@@ -213,8 +218,8 @@ export default function FinancialChart({ transactions, periodType = 'month', per
               cursor={{ fill: '#A89078', fillOpacity: 0.06, radius: 8 }}
             />
 
-            <Bar dataKey="income"       fill="url(#gradIncome)"  radius={[4, 4, 0, 0]} barSize={13} />
-            <Bar dataKey="totalExpense" fill="url(#gradExpense)" radius={[0, 0, 4, 4]} barSize={13} />
+            <Bar dataKey="income"       fill="url(#gradIncome)"  radius={[3, 3, 0, 0]} barSize={periodType === 'month' ? 5 : 13} />
+            <Bar dataKey="totalExpense" fill="url(#gradExpense)" radius={[0, 0, 3, 3]} barSize={periodType === 'month' ? 5 : 13} />
 
             <Line
               dataKey="cumulative"

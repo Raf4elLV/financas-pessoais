@@ -17,6 +17,7 @@ function toRow(tx, userId) {
     installment_index: tx.installmentIndex || null,
     end_date:          tx.endDate       || null,
     notes:             tx.notes         || null,
+    paid:              tx.paid          || false,
   }
 }
 
@@ -34,6 +35,7 @@ function fromRow(row) {
     installmentIndex: row.installment_index || null,
     endDate:          row.end_date          || null,
     notes:            row.notes             || null,
+    paid:             row.paid              || false,
     createdAt:        row.created_at,
   }
 }
@@ -94,6 +96,7 @@ export function useTransactions(userId) {
     if (updates.installmentIndex  !== undefined) patch.installment_index = updates.installmentIndex
     if (updates.endDate           !== undefined) patch.end_date          = updates.endDate
     if (updates.notes             !== undefined) patch.notes             = updates.notes
+    if (updates.paid              !== undefined) patch.paid              = updates.paid
     const { error } = await supabase.from('transactions').update(patch).eq('id', id).eq('user_id', userId)
     if (error) console.error('Erro ao atualizar transação:', error)
   }, [userId])
@@ -109,5 +112,17 @@ export function useTransactions(userId) {
     await updateTransaction(id, { endDate: today })
   }, [updateTransaction])
 
-  return { transactions, loading, addTransaction, updateTransaction, removeTransaction, endRecurrence }
+  const togglePaid = useCallback(async (id) => {
+    const tx = transactions.find(t => t.id === id)
+    if (!tx) return
+    const newPaid = !tx.paid
+    setTransactions(prev => prev.map(t => t.id === id ? { ...t, paid: newPaid } : t))
+    const { error } = await supabase.from('transactions').update({ paid: newPaid }).eq('id', id).eq('user_id', userId)
+    if (error) {
+      console.error('Erro ao atualizar status de pagamento:', error)
+      setTransactions(prev => prev.map(t => t.id === id ? { ...t, paid: !newPaid } : t))
+    }
+  }, [transactions, userId])
+
+  return { transactions, loading, addTransaction, updateTransaction, removeTransaction, endRecurrence, togglePaid }
 }

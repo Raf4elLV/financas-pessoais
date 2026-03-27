@@ -9,6 +9,7 @@ function fromRow(row) {
     currentAmount:       parseFloat(row.current_amount),
     monthlyContribution: parseFloat(row.monthly_contribution),
     startDate:           row.start_date,
+    custody:             row.custody || null,
     createdAt:           row.created_at,
   }
 }
@@ -45,6 +46,7 @@ export function useInvestmentGoals(userId) {
       current_amount:       newGoal.currentAmount,
       monthly_contribution: newGoal.monthlyContribution,
       start_date:           newGoal.startDate,
+      custody:              newGoal.custody || null,
     })
     if (error) {
       console.error('Erro ao salvar meta:', error)
@@ -67,6 +69,7 @@ export function useInvestmentGoals(userId) {
     if (updates.targetAmount        !== undefined) patch.target_amount        = parseFloat(updates.targetAmount)
     if (updates.currentAmount       !== undefined) patch.current_amount       = parseFloat(updates.currentAmount)
     if (updates.monthlyContribution !== undefined) patch.monthly_contribution = parseFloat(updates.monthlyContribution)
+    if (updates.custody             !== undefined) patch.custody              = updates.custody || null
     const { error } = await supabase.from('investment_goals').update(patch).eq('id', id).eq('user_id', userId)
     if (error) console.error('Erro ao atualizar meta:', error)
   }, [userId])

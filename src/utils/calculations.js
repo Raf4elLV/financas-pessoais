@@ -3,7 +3,7 @@
  */
 export function transactionOccursInMonth(tx, yearMonth) {
   const txYearMonth = tx.date.slice(0, 7)
-  if (!tx.isRecurring) return txYearMonth === yearMonth
+  if (!tx.recurrent) return txYearMonth === yearMonth
   if (txYearMonth > yearMonth) return false
   if (tx.endDate && yearMonth > tx.endDate.slice(0, 7)) return false
   return true
@@ -54,7 +54,7 @@ export function getTransactionsForPeriod(transactions, periodType, periodRef) {
     const endStr = end.toISOString().split('T')[0]
 
     return transactions.filter(tx => {
-      if (!tx.isRecurring) return tx.date >= periodRef && tx.date <= endStr
+      if (!tx.recurrent) return tx.date >= periodRef && tx.date <= endStr
       // Semana pode cruzar dois meses
       const months = new Set()
       const d = new Date(periodRef + 'T00:00:00')
@@ -117,7 +117,7 @@ function _addCumulative(data) {
 // Helper interno: filtra transações de uma semana (startStr..endStr)
 function _txsInWeek(transactions, startStr, endStr) {
   return transactions.filter(tx => {
-    if (!tx.isRecurring) return tx.date >= startStr && tx.date <= endStr
+    if (!tx.recurrent) return tx.date >= startStr && tx.date <= endStr
     const months = new Set()
     const d = new Date(startStr + 'T00:00:00')
     while (d.toISOString().split('T')[0] <= endStr) {
@@ -142,7 +142,7 @@ export function calcDailyChartData(transactions, weekStartDate) {
     d.setDate(d.getDate() + i)
     const dateStr = d.toISOString().split('T')[0]
     const txs = transactions.filter(tx => {
-      if (!tx.isRecurring) return tx.date === dateStr
+      if (!tx.recurrent) return tx.date === dateStr
       const occ = getRecurringOccurrenceDate(tx, dateStr.slice(0, 7))
       return occ === dateStr
     })
@@ -152,7 +152,36 @@ export function calcDailyChartData(transactions, weekStartDate) {
 }
 
 /**
+ * Dados DIÁRIOS para um mês (28-31 barras). periodRef = 'YYYY-MM'.
+ * 1 ponto por dia; label exibido apenas nos dias 1, 7, 14, 21 e último.
+ */
+export function calcDailyForMonthChartData(transactions, yearMonth) {
+  const [y, m] = yearMonth.split('-').map(Number)
+  // Garante zero-padding independente de como yearMonth foi passado ('2026-4' ou '2026-04')
+  const ym          = `${y}-${String(m).padStart(2, '0')}`
+  const daysInMonth = new Date(y, m, 0).getDate()
+  const labelDays   = new Set([1, 7, 14, 21, daysInMonth])
+
+  const raw = Array.from({ length: daysInMonth }, (_, i) => {
+    const day       = i + 1
+    const dayPad    = String(day).padStart(2, '0')
+    const dateStr   = `${ym}-${dayPad}`
+    const dateLabel = `${dayPad}/${String(m).padStart(2, '0')}`   // ex: "05/03" — para o tooltip
+    const txs = transactions.filter(tx => {
+      if (!tx.recurrent) return tx.date === dateStr
+      const occ = getRecurringOccurrenceDate(tx, ym)
+      return occ === dateStr
+    })
+    // Nos dias âncora exibe o número no eixo; nos outros deixa vazio
+    const label = labelDays.has(day) ? dayPad : ''
+    return { ..._chartEntry(label, txs, day), dateLabel }
+  })
+  return _addCumulative(raw)
+}
+
+/**
  * Dados SEMANAIS para um mês (4-5 barras). periodRef = 'YYYY-MM'.
+ * @deprecated — substituído por calcDailyForMonthChartData
  */
 export function calcWeeklyForMonthChartData(transactions, yearMonth) {
   const [y, m] = yearMonth.split('-').map(Number)
@@ -237,12 +266,12 @@ export function calcForecast(transactions) {
   const nextYM = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}`
 
   const incomeTxs = transactions.filter(
-    tx => tx.type === 'income' && tx.isRecurring && transactionOccursInMonth(tx, nextYM)
+    tx => tx.type === 'income' && tx.recurrent && transactionOccursInMonth(tx, nextYM)
   )
   const forecastIncome = incomeTxs.reduce((s, tx) => s + tx.amount, 0)
 
   const fixedTxs = transactions.filter(
-    tx => tx.type === 'fixed_expense' && tx.isRecurring && transactionOccursInMonth(tx, nextYM)
+    tx => tx.type === 'fixed_expense' && tx.recurrent && transactionOccursInMonth(tx, nextYM)
   )
   const forecastFixed = fixedTxs.reduce((s, tx) => s + tx.amount, 0)
 
@@ -259,7 +288,7 @@ export function calcForecast(transactions) {
  */
 export function getUpcomingRecurring(transactions, yearMonth) {
   return transactions
-    .filter(tx => tx.isRecurring && transactionOccursInMonth(tx, yearMonth))
+    .filter(tx => tx.recurrent && transactionOccursInMonth(tx, yearMonth))
     .map(tx => {
       const occDate = getRecurringOccurrenceDate(tx, yearMonth)
       return { ...tx, occDate }

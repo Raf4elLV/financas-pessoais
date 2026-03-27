@@ -25,7 +25,7 @@ function emptyForm() {
     amount: 0,
     date: today(),
     categoryId: '',
-    isRecurring: false,
+    recurrent: false,
     isInstallment: false,
     installments: 2,
     notes: '',
@@ -56,14 +56,14 @@ export default function TransactionForm({ isOpen, onClose, onSave, categories, g
   const isVariable = form.type === 'variable_expense'
 
   // Derived mode for variable expenses
-  const varMode = form.isInstallment ? 'parcelada' : form.isRecurring ? 'recorrente' : 'avulsa'
+  const varMode = form.isInstallment ? 'parcelada' : form.recurrent ? 'recorrente' : 'avulsa'
 
   function set(field, value) {
     setForm(prev => {
       const next = { ...prev, [field]: value }
       if (field === 'type') {
         next.categoryId = ''
-        next.isRecurring = value === 'fixed_expense'
+        next.recurrent = value === 'fixed_expense'
         next.isInstallment = false
         next.installments = 2
       }
@@ -74,7 +74,7 @@ export default function TransactionForm({ isOpen, onClose, onSave, categories, g
   function setVarMode(mode) {
     setForm(prev => ({
       ...prev,
-      isRecurring: mode === 'recorrente',
+      recurrent: mode === 'recorrente',
       isInstallment: mode === 'parcelada',
       installments: mode === 'parcelada' ? (prev.installments || 2) : 2,
       categoryId: mode === 'parcelada' ? 'cat-cartao' : prev.categoryId,
@@ -90,7 +90,7 @@ export default function TransactionForm({ isOpen, onClose, onSave, categories, g
 
     onSave({
       ...form,
-      isRecurring: isFixed ? true : (doInstallment ? true : form.isRecurring),
+      recurrent: isFixed ? true : (doInstallment ? true : form.recurrent),
       isInstallment: doInstallment || undefined,
       installments: doInstallment ? installmentCount : undefined,
       endDate: doInstallment ? computeInstallmentEndDate(form.date, installmentCount) : undefined,
@@ -253,13 +253,13 @@ export default function TransactionForm({ isOpen, onClose, onSave, categories, g
               <input
                 type="checkbox"
                 className="sr-only peer"
-                checked={form.isRecurring}
-                onChange={e => set('isRecurring', e.target.checked)}
+                checked={form.recurrent}
+                onChange={e => set('recurrent', e.target.checked)}
               />
               <div className="w-9 h-5 rounded-full peer bg-earth-200 dark:bg-earth-600 peer-checked:bg-earth-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
             </label>
             <span className="text-xs text-earth-600 dark:text-earth-400">Recorrente (mensal)</span>
-            {form.isRecurring && (
+            {form.recurrent && (
               <span className="text-xs text-earth-400 dark:text-earth-500 ml-auto">
                 Dia {form.date ? parseInt(form.date.split('-')[2]) : '—'} de cada mês
               </span>

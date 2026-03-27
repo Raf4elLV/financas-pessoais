@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Target, TrendingUp } from 'lucide-react'
+import { Plus, Pencil, Trash2, Target, TrendingUp, Landmark } from 'lucide-react'
 import Card from '../UI/Card'
 import Modal from '../UI/Modal'
 import EmptyState from '../UI/EmptyState'
@@ -9,8 +9,14 @@ import { formatCurrency } from '../../utils/formatters'
 import { calcGoalProgress } from '../../utils/calculations'
 import { INPUT_CLASS, LABEL_CLASS, BTN_PRIMARY, BTN_SECONDARY } from '../../utils/ui'
 
+const CUSTODY_SUGGESTIONS = [
+  'Nubank', 'XP Investimentos', 'BTG Pactual', 'Rico', 'Inter',
+  'Itaú', 'Bradesco', 'Santander', 'Caixa Econômica', 'Banco do Brasil',
+  'Poupança', 'Renda Fixa', 'Tesouro Direto', 'Dinheiro Físico',
+]
+
 function emptyGoalForm() {
-  return { name: '', targetAmount: 0, currentAmount: 0, monthlyContribution: 0 }
+  return { name: '', targetAmount: 0, currentAmount: 0, monthlyContribution: 0, custody: '' }
 }
 
 function GoalForm({ isOpen, onClose, onSave, editData }) {
@@ -19,7 +25,13 @@ function GoalForm({ isOpen, onClose, onSave, editData }) {
   useEffect(() => {
     if (isOpen) {
       setForm(editData
-        ? { name: editData.name, targetAmount: editData.targetAmount, currentAmount: editData.currentAmount, monthlyContribution: editData.monthlyContribution }
+        ? {
+            name: editData.name,
+            targetAmount: editData.targetAmount,
+            currentAmount: editData.currentAmount,
+            monthlyContribution: editData.monthlyContribution,
+            custody: editData.custody || '',
+          }
         : emptyGoalForm()
       )
     }
@@ -27,7 +39,7 @@ function GoalForm({ isOpen, onClose, onSave, editData }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    onSave(form)
+    onSave({ ...form, custody: form.custody.trim() || null })
     onClose()
   }
 
@@ -52,6 +64,19 @@ function GoalForm({ isOpen, onClose, onSave, editData }) {
           <label className={LABEL_CLASS}>Aporte mensal</label>
           <CurrencyInput value={form.monthlyContribution} onChange={v => setForm(p => ({ ...p, monthlyContribution: v }))} required />
         </div>
+        <div>
+          <label className={LABEL_CLASS}>Guardando em (custódia)</label>
+          <input
+            className={INPUT_CLASS}
+            placeholder="Ex: Nubank, XP, Poupança..."
+            list="custody-suggestions"
+            value={form.custody}
+            onChange={e => setForm(p => ({ ...p, custody: e.target.value }))}
+          />
+          <datalist id="custody-suggestions">
+            {CUSTODY_SUGGESTIONS.map(s => <option key={s} value={s} />)}
+          </datalist>
+        </div>
         <div className="flex gap-3 pt-1">
           <button type="button" onClick={onClose} className={BTN_SECONDARY}>Cancelar</button>
           <button type="submit" className={BTN_PRIMARY}>{editData ? 'Salvar' : 'Criar Meta'}</button>
@@ -70,12 +95,23 @@ function GoalCard({ goal, onEdit, onRemove, onInvest }) {
     <Card>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-earth-100 dark:bg-earth-700 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-earth-100 dark:bg-earth-700 flex items-center justify-center shrink-0">
             <Target size={15} className="text-earth-500 dark:text-earth-400" />
           </div>
           <div>
             <p className="text-sm font-semibold text-earth-800 dark:text-earth-100">{goal.name}</p>
-            <p className="text-xs text-earth-400 dark:text-earth-500">Meta: {formatCurrency(goal.targetAmount)}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs text-earth-400 dark:text-earth-500">Meta: {formatCurrency(goal.targetAmount)}</p>
+              {goal.custody && (
+                <>
+                  <span className="text-earth-300 dark:text-earth-600">·</span>
+                  <span className="flex items-center gap-1 text-xs text-earth-400 dark:text-earth-500">
+                    <Landmark size={10} />
+                    {goal.custody}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-1">
