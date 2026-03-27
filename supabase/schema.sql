@@ -91,6 +91,9 @@ create table if not exists public.user_preferences (
 alter table public.user_preferences enable row level security;
 create policy "preferences_all" on public.user_preferences for all using (auth.uid() = user_id);
 
+-- ── Onboarding flag ───────────────────────────────────────────────────────
+alter table public.profiles add column if not exists onboarded boolean default false not null;
+
 -- ── Auto-criar perfil após cadastro ───────────────────────────────────────
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$

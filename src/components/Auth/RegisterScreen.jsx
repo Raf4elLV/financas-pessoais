@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Wallet, Camera, X, Sun, Moon } from 'lucide-react'
+import { Wallet, Camera, X, Sun, Moon, Mail } from 'lucide-react'
 import AvatarDisplay from './AvatarDisplay'
 import PhoneInput from '../UI/PhoneInput'
 import PasswordInput from '../UI/PasswordInput'
@@ -136,6 +136,10 @@ export default function RegisterScreen({ onRegister, onGoToLogin }) {
                   onChange={e => set('email', e.target.value)}
                   required
                 />
+                <div className="flex items-start gap-1.5 mt-1.5 text-xs text-earth-400 dark:text-earth-500">
+                  <Mail size={11} className="shrink-0 mt-0.5" />
+                  <span>Um e-mail de verificação será enviado. Use um endereço real ao qual você tenha acesso.</span>
+                </div>
               </div>
               <div className="col-span-2">
                 <label className={LABEL_CLASS}>Telefone (opcional)</label>

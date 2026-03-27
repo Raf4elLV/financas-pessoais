@@ -158,7 +158,7 @@ function PasswordSection({ onChangePassword }) {
     e.preventDefault()
     setError('')
     setSuccess('')
-    if (form.next.length < 4)          { setError('A nova senha deve ter pelo menos 4 caracteres.'); return }
+    if (form.next.length < 6)          { setError('A nova senha deve ter pelo menos 6 caracteres.'); return }
     if (form.next !== form.confirm)    { setError('As senhas não coincidem.'); return }
     const result = onChangePassword({ currentPassword: form.current, newPassword: form.next })
     if (!result.ok) { setError(result.error); return }
@@ -192,7 +192,7 @@ function PasswordSection({ onChangePassword }) {
             autoComplete="new-password"
             value={form.next}
             onChange={e => setForm(p => ({ ...p, next: e.target.value }))}
-            placeholder="Mínimo 4 caracteres"
+            placeholder="Mínimo 6 caracteres"
             required
           />
           <PasswordRequirements value={form.next} />
@@ -215,7 +215,7 @@ function PasswordSection({ onChangePassword }) {
 
         <button
           type="submit"
-          disabled={form.next.length < 4 || form.next !== form.confirm || !form.current}
+          disabled={form.next.length < 6 || form.next !== form.confirm || !form.current}
           className={`${BTN_PRIMARY} w-full`}
         >
           Alterar senha

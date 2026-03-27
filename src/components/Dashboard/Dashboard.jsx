@@ -28,7 +28,7 @@ function todayFormatted() {
   }).replace(/^\w/, c => c.toUpperCase())
 }
 
-export default function Dashboard({ transactionsState, categoriesState, goalsState, besteirasState, paymentStatus, setActivePage, currentUser, toggleTheme }) {
+export default function Dashboard({ transactionsState, categoriesState, goalsState, besteirasState, paymentStatus, setActivePage, currentUser, toggleTheme, onMarkOnboarded }) {
   const { transactions, addTransaction } = transactionsState
   const { categories, getCategoriesByType } = categoriesState
   const { goals } = goalsState
@@ -52,7 +52,9 @@ export default function Dashboard({ transactionsState, categoriesState, goalsSta
       <OnboardingTutorial
         userId={currentUser.id}
         userName={currentUser.name.split(' ')[0]}
+        isOnboarded={currentUser.onboarded}
         toggleTheme={toggleTheme}
+        onDismiss={onMarkOnboarded}
       />
       {/* Cabeçalho */}
       <div className="flex items-center justify-between">

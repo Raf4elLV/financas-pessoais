@@ -38,7 +38,7 @@ function Spinner() {
 }
 
 // ── Authenticated shell ────────────────────────────────────────────────────
-function AppShell({ currentUser, logout, updateProfile, changePassword }) {
+function AppShell({ currentUser, logout, updateProfile, changePassword, markOnboarded }) {
   const { theme, toggleTheme } = useTheme(currentUser.id)
   const { isOpen: sidebarOpen, toggle: toggleSidebar, close: closeSidebar } = useSidebar()
   const [activePage, setActivePage] = useState('dashboard')
@@ -64,7 +64,7 @@ function AppShell({ currentUser, logout, updateProfile, changePassword }) {
       onCloseSidebar={closeSidebar}
       onOpenProfile={() => setActivePage('profile')}
     >
-      {activePage === 'dashboard'    && <Dashboard    {...shared} setActivePage={setActivePage} currentUser={currentUser} toggleTheme={toggleTheme} />}
+      {activePage === 'dashboard'    && <Dashboard    {...shared} setActivePage={setActivePage} currentUser={currentUser} toggleTheme={toggleTheme} onMarkOnboarded={markOnboarded} />}
       {activePage === 'transactions' && <TransactionList {...shared} />}
       {activePage === 'categories'   && <CategoryManager {...shared} />}
       {activePage === 'goals'        && <GoalManager   {...shared} />}
@@ -93,6 +93,7 @@ export default function App() {
     resetPassword,
     updateProfile,
     changePassword,
+    markOnboarded,
   } = useAuth()
 
   const [authScreen, setAuthScreen] = useState('login') // 'login' | 'register' | 'forgot'
@@ -111,6 +112,7 @@ export default function App() {
         logout={logout}
         updateProfile={updateProfile}
         changePassword={changePassword}
+        markOnboarded={markOnboarded}
       />
     )
   }

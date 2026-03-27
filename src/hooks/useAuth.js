@@ -5,11 +5,13 @@ import { supabase } from '../lib/supabase'
 
 function rowToUser(profile, authUser) {
   return {
-    id:     authUser.id,
-    email:  authUser.email,
-    name:   profile.name,
-    phone:  profile.phone  || null,
-    avatar: profile.avatar || null,
+    id:        authUser.id,
+    email:     authUser.email,
+    name:      profile.name,
+    phone:     profile.phone      || null,
+    avatar:    profile.avatar     || null,
+    createdAt: profile.created_at || null,
+    onboarded: profile.onboarded  ?? false,
   }
 }
 
@@ -32,51 +34,91 @@ async function upsertProfile(authUser, updates) {
 // ─── hook ─────────────────────────────────────────────────────────────────
 
 export function useAuth() {
+  const [authUser,     setAuthUser]     = useState(undefined) // undefined = not yet known
   const [currentUser,  setCurrentUser]  = useState(null)
   const [authLoading,  setAuthLoading]  = useState(true)
-  const [authEvent,    setAuthEvent]    = useState(null) // 'PASSWORD_RECOVERY'
+  const [authEvent,    setAuthEvent]    = useState(null)
 
+  // ── Auth state listener — SYNCHRONOUS, zero awaits ────────────────────
+  // Supabase v2 awaits each onAuthStateChange callback before resolving
+  // auth operations (signInWithPassword, etc.). Any async work here would
+  // block login. Keep this callback fast and synchronous only.
   useEffect(() => {
-    // Initial session check
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const profile = await fetchProfile(session.user)
-        setCurrentUser(profile)
-      }
-      setAuthLoading(false)
-    })
+    const safetyTimer = setTimeout(() => setAuthLoading(false), 8000)
 
-    // Auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        if (event === 'INITIAL_SESSION') {
+          setAuthUser(session?.user ?? null)
+          if (!session) {
+            clearTimeout(safetyTimer)
+            setAuthLoading(false)
+          }
+          return
+        }
+        if (event === 'SIGNED_IN' && session) {
+          setAuthUser(session.user)
+          setAuthEvent(null)
+          return
+        }
+        if (event === 'TOKEN_REFRESHED' && session) {
+          setAuthUser(session.user)
+          return
+        }
+        if (event === 'SIGNED_OUT') {
+          setAuthUser(null)
+          setCurrentUser(null)
+          setAuthEvent(null)
+          clearTimeout(safetyTimer)
+          setAuthLoading(false)
+          return
+        }
         if (event === 'PASSWORD_RECOVERY') {
           setAuthEvent('PASSWORD_RECOVERY')
           return
         }
-        if (event === 'SIGNED_IN' && session) {
-          // Sync avatar from metadata to profile on first login
-          const meta = session.user.user_metadata || {}
-          if (meta.avatar) {
-            await upsertProfile(session.user, {
-              name:   meta.name  || session.user.email,
-              phone:  meta.phone || null,
-              avatar: meta.avatar,
-            })
-          }
-          const profile = await fetchProfile(session.user)
-          setCurrentUser(profile)
-          setAuthEvent(null)
-          setAuthLoading(false)
-        }
-        if (event === 'SIGNED_OUT') {
-          setCurrentUser(null)
-          setAuthEvent(null)
-        }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(safetyTimer)
+      subscription.unsubscribe()
+    }
   }, [])
+
+  // ── Profile fetch — runs whenever the authenticated user ID changes ────
+  // Separated from the auth listener so it never blocks Supabase operations.
+  useEffect(() => {
+    if (authUser === undefined) return // still waiting for INITIAL_SESSION
+
+    if (!authUser) return // logged out — handled by the listener above
+
+    let cancelled = false
+
+    // Sync avatar from metadata to profile (fire-and-forget, non-blocking)
+    const meta = authUser.user_metadata || {}
+    if (meta.avatar) {
+      upsertProfile(authUser, {
+        name:   meta.name  || authUser.email,
+        phone:  meta.phone || null,
+        avatar: meta.avatar,
+      })
+    }
+
+    fetchProfile(authUser)
+      .then(profile => {
+        if (cancelled) return
+        setCurrentUser(profile)
+        setAuthLoading(false)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setCurrentUser(null)
+        setAuthLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [authUser?.id])
 
   // ── register ────────────────────────────────────────────────────────────
   async function register({ name, email, phone, password, avatarBase64 }) {
@@ -110,6 +152,7 @@ export function useAuth() {
   // ── logout ──────────────────────────────────────────────────────────────
   async function logout() {
     await supabase.auth.signOut()
+    setCurrentUser(null)
   }
 
   // ── forgotPassword ───────────────────────────────────────────────────────
@@ -158,6 +201,12 @@ export function useAuth() {
     return { ok: true }
   }
 
+  // ── markOnboarded ────────────────────────────────────────────────────────
+  async function markOnboarded(userId) {
+    await supabase.from('profiles').update({ onboarded: true }).eq('id', userId)
+    setCurrentUser(u => u ? { ...u, onboarded: true } : u)
+  }
+
   // ── changePassword ───────────────────────────────────────────────────────
   async function changePassword({ currentPassword, newPassword }) {
     const { error: authErr } = await supabase.auth.signInWithPassword({
@@ -182,5 +231,6 @@ export function useAuth() {
     resetPassword,
     updateProfile,
     changePassword,
+    markOnboarded,
   }
 }

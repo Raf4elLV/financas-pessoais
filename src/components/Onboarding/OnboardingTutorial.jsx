@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
-  Sparkles, PlusCircle, CreditCard, Bell, Moon, Sun,
+  Sparkles, PlusCircle, Bell, Moon, Sun,
   ChevronRight, ChevronLeft, X,
 } from 'lucide-react'
 
@@ -46,16 +47,15 @@ const STEPS = [
 
 const SPOTLIGHT_PAD = 10
 
-export default function OnboardingTutorial({ userId, userName, toggleTheme }) {
-  const storageKey = `fin_onboarded_${userId}`
-  const [visible, setVisible] = useState(() => localStorage.getItem(storageKey) !== 'true')
+export default function OnboardingTutorial({ userId, userName, isOnboarded, toggleTheme, onDismiss }) {
+  const [visible, setVisible] = useState(!isOnboarded)
   const [step, setStep]       = useState(0)
   const [targetRect, setTargetRect] = useState(null)
 
   const current = STEPS[step]
   const isLast  = step === STEPS.length - 1
 
-  // Spotlight: measure target element and update on scroll/resize
+  // Measure target element after layout settles (double RAF = two frames after scroll)
   const updateRect = useCallback(() => {
     const id = current.targetId
     if (!id) { setTargetRect(null); return }
@@ -68,15 +68,18 @@ export default function OnboardingTutorial({ userId, userName, toggleTheme }) {
     setTargetRect(null)
     if (!current.targetId) return
 
-    // Scroll target into view, then measure after animation
     const el = document.getElementById(current.targetId)
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    const timer = setTimeout(updateRect, 380)
+    if (el) el.scrollIntoView({ behavior: 'instant', block: 'center' })
+
+    // Wait two animation frames so the browser has painted after the scroll
+    let raf2
+    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(updateRect) })
 
     window.addEventListener('scroll', updateRect, true)
     window.addEventListener('resize', updateRect)
     return () => {
-      clearTimeout(timer)
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
       window.removeEventListener('scroll', updateRect, true)
       window.removeEventListener('resize', updateRect)
     }
@@ -85,17 +88,13 @@ export default function OnboardingTutorial({ userId, userName, toggleTheme }) {
   if (!visible) return null
 
   function dismiss() {
-    localStorage.setItem(storageKey, 'true')
+    onDismiss(userId)
     setVisible(false)
   }
 
   function goTo(i) { setStep(i) }
   function next() { if (!isLast) setStep(s => s + 1); else dismiss() }
   function prev() { if (step > 0) setStep(s => s - 1) }
-
-  // Card goes bottom when target is in upper half, top when target is in lower half
-  const midY = typeof window !== 'undefined' ? window.innerHeight * 0.52 : 400
-  const cardAtBottom = !targetRect || (targetRect.top + targetRect.height / 2) < midY
 
   // ── Tutorial card ────────────────────────────────────────────────────────
   const TutorialCard = (
@@ -132,12 +131,9 @@ export default function OnboardingTutorial({ userId, userName, toggleTheme }) {
 
       {/* Content */}
       <div className="flex gap-4 px-5 pt-4 pb-5">
-        {/* Icon */}
         <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${current.iconBg}`}>
           <current.Icon size={22} className={current.iconColor} />
         </div>
-
-        {/* Text */}
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-bold text-earth-800 dark:text-earth-100 mb-1.5 leading-snug capitalize">
             {step === 0 ? `${userName}, ` : ''}{current.title}
@@ -187,14 +183,17 @@ export default function OnboardingTutorial({ userId, userName, toggleTheme }) {
     </div>
   )
 
-  return (
+  // Render via portal directly into <body> so no ancestor CSS affects fixed positioning
+  return createPortal(
     <>
-      {/* ── Backdrop ─────────────────────────────────────────────────────── */}
+      {/* ── Backdrop ───────────────────────────────────────────────────── */}
       {targetRect ? (
-        // Spotlight mode: SVG with cutout (pointer-events none = element stays clickable)
         <svg
-          className="fixed inset-0 z-40"
-          style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+          style={{
+            position: 'fixed', inset: 0,
+            width: '100vw', height: '100vh',
+            zIndex: 40, pointerEvents: 'none',
+          }}
           aria-hidden="true"
         >
           <defs>
@@ -210,48 +209,43 @@ export default function OnboardingTutorial({ userId, userName, toggleTheme }) {
               />
             </mask>
           </defs>
-          <rect
-            x="0" y="0" width="100%" height="100%"
-            fill="rgba(0,0,0,0.64)"
-            mask="url(#onb-mask)"
-          />
+          <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.64)" mask="url(#onb-mask)" />
         </svg>
       ) : (
-        // No spotlight: solid backdrop that dismisses on click
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+          className="bg-black/60 backdrop-blur-sm"
           onClick={dismiss}
         />
       )}
 
-      {/* ── Spotlight ring ───────────────────────────────────────────────── */}
+      {/* ── Spotlight ring ─────────────────────────────────────────────── */}
       {targetRect && (
         <div
-          className="fixed z-40 rounded-[14px] pointer-events-none"
           style={{
+            position: 'fixed',
             top:    targetRect.top    - SPOTLIGHT_PAD,
             left:   targetRect.left   - SPOTLIGHT_PAD,
             width:  targetRect.width  + SPOTLIGHT_PAD * 2,
             height: targetRect.height + SPOTLIGHT_PAD * 2,
+            zIndex: 40,
+            borderRadius: 14,
+            pointerEvents: 'none',
             boxShadow: '0 0 0 2.5px #A89078, 0 0 0 5px rgba(168,144,120,0.25)',
           }}
         />
       )}
 
-      {/* ── Tutorial card ────────────────────────────────────────────────── */}
-      {targetRect ? (
-        <div
-          className={`fixed z-50 inset-x-0 px-4 flex justify-center ${cardAtBottom ? 'bottom-5' : 'top-5'}`}
-        >
+      {/* ── Tutorial card ──────────────────────────────────────────────── */}
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 50, pointerEvents: 'none' }}
+        className="flex items-center justify-center p-4"
+      >
+        <div style={{ pointerEvents: 'auto' }} className="w-full max-w-sm">
           {TutorialCard}
         </div>
-      ) : (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-          <div className="pointer-events-auto w-full max-w-sm">
-            {TutorialCard}
-          </div>
-        </div>
-      )}
-    </>
+      </div>
+    </>,
+    document.body
   )
 }
