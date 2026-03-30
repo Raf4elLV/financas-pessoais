@@ -165,8 +165,9 @@ export default function FinancialChart({ transactions, periodType = 'month', per
         </div>
       </div>
 
-      {/* Chart area */}
-      <div className="flex-1 min-h-0 relative">
+      {/* Chart area — min-height garante que o ResponsiveContainer tenha altura no mobile,
+          onde o container pai não tem altura explícita (grid col ocupa altura do conteúdo) */}
+      <div className="flex-1 min-h-0 relative" style={{ minHeight: '200px' }}>
         {!hasData && (
           <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
             <p className="text-xs text-earth-300 dark:text-earth-600">Sem transações neste período</p>

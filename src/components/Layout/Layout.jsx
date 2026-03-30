@@ -14,7 +14,7 @@ export default function Layout({
   }
 
   return (
-    <div className="flex flex-col h-screen bg-earth-50 dark:bg-earth-900 text-earth-800 dark:text-earth-100">
+    <div className="flex flex-col h-screen-safe bg-earth-50 dark:bg-earth-900 text-earth-800 dark:text-earth-100">
       <Header
         theme={theme}
         toggleTheme={toggleTheme}
@@ -31,7 +31,7 @@ export default function Layout({
           onClose={onCloseSidebar}
           onNavClick={handleNavClick}
         />
-        <main className="flex-1 overflow-y-auto scrollbar-thin p-6">
+        <main className="flex-1 overflow-y-auto scrollbar-thin p-4 sm:p-6">
           {children}
         </main>
       </div>

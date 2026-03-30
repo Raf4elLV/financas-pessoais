@@ -168,7 +168,7 @@ export default function TransactionList({ transactionsState, categoriesState }) 
       return (
         <div
           key={tx.id}
-          className={`flex items-center gap-3 px-5 py-3.5 transition-all duration-300 group ${
+          className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-3.5 transition-all duration-300 group ${
             isPaid
               ? 'bg-earth-50/60 dark:bg-earth-800/30 hover:bg-earth-50 dark:hover:bg-earth-700/30 opacity-60'
               : 'hover:bg-earth-50 dark:hover:bg-earth-700/50 opacity-100'
@@ -235,19 +235,21 @@ export default function TransactionList({ transactionsState, categoriesState }) 
             </button>
           )}
 
-          {/* Ações */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {/* Ações — sempre visíveis no mobile (touch não tem hover); ocultadas até hover no desktop */}
+          <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
             <button
               onClick={() => handleEdit(tx)}
-              className="p-1.5 rounded-lg text-earth-400 hover:text-earth-600 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-700 transition-colors"
+              className="p-2 rounded-xl text-earth-400 hover:text-earth-600 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-700 transition-colors"
+              aria-label="Editar"
             >
-              <Pencil size={13} />
+              <Pencil size={14} />
             </button>
             <button
               onClick={() => removeTransaction(tx.id)}
-              className="p-1.5 rounded-lg text-earth-400 hover:text-negative dark:hover:text-negative-dark hover:bg-earth-100 dark:hover:bg-earth-700 transition-colors"
+              className="p-2 rounded-xl text-earth-400 hover:text-negative dark:hover:text-negative-dark hover:bg-earth-100 dark:hover:bg-earth-700 transition-colors"
+              aria-label="Excluir"
             >
-              <Trash2 size={13} />
+              <Trash2 size={14} />
             </button>
           </div>
         </div>
@@ -299,10 +301,11 @@ export default function TransactionList({ transactionsState, categoriesState }) 
         </div>
         <button
           onClick={() => { setEditData(null); setFormOpen(true) }}
-          className="flex items-center gap-2 px-4 py-2 bg-earth-500 hover:bg-earth-600 text-white text-sm font-medium rounded-xl transition-colors"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-earth-500 hover:bg-earth-600 text-white text-sm font-medium rounded-xl transition-colors shrink-0"
         >
           <Plus size={15} />
-          Nova Transação
+          <span className="hidden sm:inline">Nova Transação</span>
+          <span className="sm:hidden">Nova</span>
         </button>
       </div>
 
@@ -383,19 +386,19 @@ export default function TransactionList({ transactionsState, categoriesState }) 
             </button>
           ))}
           {timeFilter === 'custom' && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <input
                 type="date"
                 value={dateFrom}
                 onChange={e => setDateFrom(e.target.value)}
-                className="px-2 py-1.5 text-xs rounded-lg border border-earth-200 dark:border-earth-600 bg-white dark:bg-earth-800 text-earth-800 dark:text-earth-100 focus:outline-none focus:border-earth-400"
+                className="flex-1 sm:flex-none px-2 py-2 text-sm rounded-lg border border-earth-200 dark:border-earth-600 bg-white dark:bg-earth-800 text-earth-800 dark:text-earth-100 focus:outline-none focus:border-earth-400"
               />
               <span className="text-xs text-earth-400">até</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={e => setDateTo(e.target.value)}
-                className="px-2 py-1.5 text-xs rounded-lg border border-earth-200 dark:border-earth-600 bg-white dark:bg-earth-800 text-earth-800 dark:text-earth-100 focus:outline-none focus:border-earth-400"
+                className="flex-1 sm:flex-none px-2 py-2 text-sm rounded-lg border border-earth-200 dark:border-earth-600 bg-white dark:bg-earth-800 text-earth-800 dark:text-earth-100 focus:outline-none focus:border-earth-400"
               />
             </div>
           )}
@@ -404,7 +407,7 @@ export default function TransactionList({ transactionsState, categoriesState }) 
 
       {/* ── Busca ──────────────────────────────────────────────────────────── */}
       <input
-        className="w-full px-3 py-2 text-sm rounded-xl border border-earth-200 dark:border-earth-600 bg-white dark:bg-earth-800 text-earth-800 dark:text-earth-100 placeholder-earth-400 focus:outline-none focus:border-earth-400 transition-colors"
+        className="w-full px-3 py-2 text-base sm:text-sm rounded-xl border border-earth-200 dark:border-earth-600 bg-white dark:bg-earth-800 text-earth-800 dark:text-earth-100 placeholder-earth-400 focus:outline-none focus:border-earth-400 transition-colors"
         placeholder="Buscar por descrição..."
         value={search}
         onChange={e => setSearch(e.target.value)}

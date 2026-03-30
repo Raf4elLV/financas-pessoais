@@ -65,10 +65,11 @@ export default function Dashboard({ transactionsState, categoriesState, goalsSta
         <button
           id="btn-nova-transacao"
           onClick={() => setFormOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-earth-500 hover:bg-earth-600 text-white text-sm font-medium rounded-xl transition-colors"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-earth-500 hover:bg-earth-600 text-white text-sm font-medium rounded-xl transition-colors shrink-0"
         >
           <Plus size={15} />
-          Nova Transação
+          <span className="hidden sm:inline">Nova Transação</span>
+          <span className="sm:hidden">Nova</span>
         </button>
       </div>
 

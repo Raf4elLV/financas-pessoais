@@ -3,11 +3,11 @@ import AvatarDisplay from '../Auth/AvatarDisplay'
 
 export default function Header({ theme, toggleTheme, currentUser, logout, onMenuToggle, onOpenProfile }) {
   return (
-    <header className="h-14 flex items-center justify-between px-4 border-b border-earth-200 dark:border-earth-700 bg-white dark:bg-earth-900 shrink-0">
-      <div className="flex items-center gap-2">
+    <header className="h-14 flex items-center justify-between px-3 sm:px-4 border-b border-earth-200 dark:border-earth-700 bg-white dark:bg-earth-900 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2">
         <button
           onClick={onMenuToggle}
-          className="p-2 rounded-lg text-earth-500 hover:text-earth-700 dark:text-earth-400 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-800 transition-colors"
+          className="p-2.5 rounded-xl text-earth-500 hover:text-earth-700 dark:text-earth-400 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-800 active:bg-earth-100 dark:active:bg-earth-800 transition-colors"
           title="Alternar menu"
         >
           <Menu size={18} />
@@ -22,11 +22,11 @@ export default function Header({ theme, toggleTheme, currentUser, logout, onMenu
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         {currentUser && (
           <button
             onClick={onOpenProfile}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-xl text-earth-600 dark:text-earth-400 hover:bg-earth-100 dark:hover:bg-earth-800 transition-colors mr-1"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-xl text-earth-600 dark:text-earth-400 hover:bg-earth-100 dark:hover:bg-earth-800 active:bg-earth-100 dark:active:bg-earth-800 transition-colors"
             title="Meu perfil"
           >
             <AvatarDisplay user={currentUser} size={28} />
@@ -39,7 +39,7 @@ export default function Header({ theme, toggleTheme, currentUser, logout, onMenu
         <button
           id="btn-toggle-theme"
           onClick={toggleTheme}
-          className="p-2 rounded-lg text-earth-500 hover:text-earth-700 dark:text-earth-400 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-800 transition-colors"
+          className="p-2.5 rounded-xl text-earth-500 hover:text-earth-700 dark:text-earth-400 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-800 active:bg-earth-100 dark:active:bg-earth-800 transition-colors"
           title={theme === 'light' ? 'Tema escuro' : 'Tema claro'}
         >
           {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
@@ -48,7 +48,7 @@ export default function Header({ theme, toggleTheme, currentUser, logout, onMenu
         {logout && (
           <button
             onClick={logout}
-            className="p-2 rounded-lg text-earth-400 hover:text-negative dark:hover:text-negative-dark hover:bg-earth-100 dark:hover:bg-earth-800 transition-colors"
+            className="p-2.5 rounded-xl text-earth-400 hover:text-negative dark:hover:text-negative-dark hover:bg-earth-100 dark:hover:bg-earth-800 active:bg-earth-100 dark:active:bg-earth-800 transition-colors"
             title="Sair"
           >
             <LogOut size={16} />

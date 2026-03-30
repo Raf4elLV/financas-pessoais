@@ -39,7 +39,7 @@ export default function PeriodFilter({ periodType, setPeriodType, periodRef, set
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2">
       {/* Tipo de período */}
       <div className="flex rounded-xl border border-earth-200 dark:border-earth-700 overflow-hidden bg-earth-50 dark:bg-earth-800">
         {types.map(({ id, label }) => (
@@ -47,7 +47,6 @@ export default function PeriodFilter({ periodType, setPeriodType, periodRef, set
             key={id}
             onClick={() => {
               setPeriodType(id)
-              // Reset ref para o período atual
               const now = new Date()
               if (id === 'month') {
                 setPeriodRef(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
@@ -60,7 +59,7 @@ export default function PeriodFilter({ periodType, setPeriodType, periodRef, set
                 setPeriodRef(monday.toISOString().split('T')[0])
               }
             }}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors
+            className={`px-3 py-2 text-xs font-medium transition-colors
               ${periodType === id
                 ? 'bg-earth-500 text-white'
                 : 'text-earth-500 dark:text-earth-400 hover:text-earth-700 dark:hover:text-earth-200'
@@ -75,16 +74,18 @@ export default function PeriodFilter({ periodType, setPeriodType, periodRef, set
       <div className="flex items-center gap-1">
         <button
           onClick={() => navigate(-1)}
-          className="p-1.5 rounded-lg text-earth-500 hover:text-earth-700 dark:text-earth-400 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-800 transition-colors"
+          className="p-2 rounded-xl text-earth-500 hover:text-earth-700 dark:text-earth-400 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-800 transition-colors"
+          aria-label="Período anterior"
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="text-sm font-medium text-earth-700 dark:text-earth-300 min-w-[140px] text-center">
+        <span className="text-sm font-medium text-earth-700 dark:text-earth-300 min-w-[110px] sm:min-w-[140px] text-center tabular-nums">
           {getLabel()}
         </span>
         <button
           onClick={() => navigate(1)}
-          className="p-1.5 rounded-lg text-earth-500 hover:text-earth-700 dark:text-earth-400 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-800 transition-colors"
+          className="p-2 rounded-xl text-earth-500 hover:text-earth-700 dark:text-earth-400 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-800 transition-colors"
+          aria-label="Próximo período"
         >
           <ChevronRight size={16} />
         </button>

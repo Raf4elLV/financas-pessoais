@@ -51,10 +51,10 @@ export default function Sidebar({ activePage, setActivePage, isOpen, onClose, on
                 title={!isOpen ? label : undefined}
                 className={[
                   'flex items-center rounded-xl text-sm font-medium transition-colors w-full',
-                  isOpen ? 'gap-3 px-3 py-2.5' : 'px-3 py-2.5 lg:justify-center lg:px-0',
+                  isOpen ? 'gap-3 px-3 py-3 lg:py-2.5' : 'px-3 py-3 lg:py-2.5 lg:justify-center lg:px-0',
                   active
                     ? 'bg-earth-500 text-white'
-                    : 'text-earth-600 dark:text-earth-400 hover:bg-earth-200 dark:hover:bg-earth-800 hover:text-earth-800 dark:hover:text-earth-200',
+                    : 'text-earth-600 dark:text-earth-400 hover:bg-earth-200 dark:hover:bg-earth-800 active:bg-earth-200 dark:active:bg-earth-800 hover:text-earth-800 dark:hover:text-earth-200',
                 ].join(' ')}
               >
                 <Icon size={16} className="shrink-0" />
