@@ -11,6 +11,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <!--
+    Script síncrono de tema — deve rodar ANTES de qualquer renderização para
+    evitar o flash de tema claro. Lê o localStorage e aplica class="dark" no
+    <html> imediatamente, sem esperar o React ou a autenticação resolverem.
+    A chave segue o padrão fin_settings_<userId> definido em utils/storage.js.
+  -->
+  <script>
+    (function () {
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var key = localStorage.key(i)
+          if (key && key.startsWith('fin_settings_')) {
+            var s = JSON.parse(localStorage.getItem(key) || '{}')
+            if (s.theme === 'dark') {
+              document.documentElement.classList.add('dark')
+              break
+            }
+          }
+        }
+      } catch (e) {}
+    })()
+  </script>
   </head>
   <body>
     <div id="root"></div>
