@@ -34,6 +34,8 @@ export default function RegisterScreen({ onRegister, onGoToLogin }) {
   function handleAvatarFile(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith('image/')) { setError('Selecione um arquivo de imagem válido.'); e.target.value = ''; return }
+    if (file.size > 5 * 1024 * 1024) { setError('A imagem deve ter no máximo 5 MB.'); e.target.value = ''; return }
     e.target.value = ''
     setCropSrc(URL.createObjectURL(file))
   }
@@ -48,6 +50,7 @@ export default function RegisterScreen({ onRegister, onGoToLogin }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    if (!form.name.trim() || form.name.trim().length < 2) { setError('Informe seu nome completo.'); return }
     if (form.password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return }
     setLoading(true)
     const result = await onRegister({ ...form, avatarBase64 })
@@ -117,6 +120,7 @@ export default function RegisterScreen({ onRegister, onGoToLogin }) {
                 placeholder="Maria Silva"
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
+                maxLength={80}
                 required
                 autoFocus
               />

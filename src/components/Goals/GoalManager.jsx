@@ -39,7 +39,10 @@ function GoalForm({ isOpen, onClose, onSave, editData }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    onSave({ ...form, custody: form.custody.trim() || null })
+    if (!form.name.trim()) return
+    if (form.targetAmount <= 0) return
+    if (form.monthlyContribution <= 0) return
+    onSave({ ...form, name: form.name.trim(), custody: form.custody.trim() || null })
     onClose()
   }
 
@@ -48,7 +51,7 @@ function GoalForm({ isOpen, onClose, onSave, editData }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className={LABEL_CLASS}>Nome da meta</label>
-          <input className={INPUT_CLASS} placeholder="Ex: Reserva de emergência" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
+          <input className={INPUT_CLASS} placeholder="Ex: Reserva de emergência" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} maxLength={80} required />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -72,6 +75,7 @@ function GoalForm({ isOpen, onClose, onSave, editData }) {
             list="custody-suggestions"
             value={form.custody}
             onChange={e => setForm(p => ({ ...p, custody: e.target.value }))}
+            maxLength={50}
           />
           <datalist id="custody-suggestions">
             {CUSTODY_SUGGESTIONS.map(s => <option key={s} value={s} />)}

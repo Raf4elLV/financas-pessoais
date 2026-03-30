@@ -90,12 +90,13 @@ export default function TransactionForm({ isOpen, onClose, onSave, categories, g
 
     onSave({
       ...form,
+      description: form.description.trim(),
       recurrent: isFixed ? true : (doInstallment ? true : form.recurrent),
       isInstallment: doInstallment || undefined,
       installments: doInstallment ? installmentCount : undefined,
       endDate: doInstallment ? computeInstallmentEndDate(form.date, installmentCount) : undefined,
       recurrenceDay: null,
-      notes: form.notes || null,
+      notes: form.notes?.trim() || null,
     })
     onClose()
   }
@@ -139,6 +140,7 @@ export default function TransactionForm({ isOpen, onClose, onSave, categories, g
               placeholder={isFixed ? 'Ex: Aluguel' : isVariable && form.isInstallment ? 'Ex: TV nova' : 'Ex: Supermercado'}
               value={form.description}
               onChange={e => set('description', e.target.value)}
+              maxLength={100}
               required
             />
           </div>
@@ -276,6 +278,7 @@ export default function TransactionForm({ isOpen, onClose, onSave, categories, g
             placeholder="Notas adicionais..."
             value={form.notes}
             onChange={e => set('notes', e.target.value)}
+            maxLength={300}
           />
         </div>
 

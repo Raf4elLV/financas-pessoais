@@ -52,6 +52,7 @@ export default function CategoryManager({ categoriesState }) {
               placeholder="Nome da categoria"
               value={newName}
               onChange={e => { setNewName(e.target.value); setError('') }}
+              maxLength={50}
               required
             />
             {error && <p className="text-xs text-negative mt-1">{error}</p>}

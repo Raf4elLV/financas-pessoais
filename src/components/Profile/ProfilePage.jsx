@@ -47,6 +47,8 @@ function PersonalInfoSection({ currentUser, onUpdateProfile }) {
   function handleAvatarFile(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith('image/')) { setError('Selecione um arquivo de imagem válido.'); e.target.value = ''; return }
+    if (file.size > 5 * 1024 * 1024) { setError('A imagem deve ter no máximo 5 MB.'); e.target.value = ''; return }
     e.target.value = ''
     setCropSrc(URL.createObjectURL(file))
   }
@@ -62,7 +64,7 @@ function PersonalInfoSection({ currentUser, onUpdateProfile }) {
     e.preventDefault()
     setError('')
     setSuccess('')
-    const result = onUpdateProfile({ name: form.name, email: form.email, phone: form.phone, avatar })
+    const result = await onUpdateProfile({ name: form.name, email: form.email, phone: form.phone, avatar })
     if (!result.ok) { setError(result.error); return }
     setSuccess('Perfil atualizado com sucesso.')
   }
@@ -110,6 +112,7 @@ function PersonalInfoSection({ currentUser, onUpdateProfile }) {
               autoComplete="name"
               value={form.name}
               onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+              maxLength={80}
               required
             />
           </div>
@@ -154,13 +157,13 @@ function PasswordSection({ onChangePassword }) {
   const [error, setError]   = useState('')
   const [success, setSuccess] = useState('')
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setSuccess('')
     if (form.next.length < 6)          { setError('A nova senha deve ter pelo menos 6 caracteres.'); return }
     if (form.next !== form.confirm)    { setError('As senhas não coincidem.'); return }
-    const result = onChangePassword({ currentPassword: form.current, newPassword: form.next })
+    const result = await onChangePassword({ currentPassword: form.current, newPassword: form.next })
     if (!result.ok) { setError(result.error); return }
     setSuccess('Senha alterada com sucesso.')
     setForm({ current: '', next: '', confirm: '' })
