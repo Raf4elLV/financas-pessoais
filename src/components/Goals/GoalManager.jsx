@@ -41,7 +41,6 @@ function GoalForm({ isOpen, onClose, onSave, editData }) {
     e.preventDefault()
     if (!form.name.trim()) return
     if (form.targetAmount <= 0) return
-    if (form.monthlyContribution <= 0) return
     onSave({ ...form, name: form.name.trim(), custody: form.custody.trim() || null })
     onClose()
   }
@@ -64,8 +63,8 @@ function GoalForm({ isOpen, onClose, onSave, editData }) {
           </div>
         </div>
         <div>
-          <label className={LABEL_CLASS}>Aporte mensal</label>
-          <CurrencyInput value={form.monthlyContribution} onChange={v => setForm(p => ({ ...p, monthlyContribution: v }))} required />
+          <label className={LABEL_CLASS}>Aporte mensal (opcional)</label>
+          <CurrencyInput value={form.monthlyContribution} onChange={v => setForm(p => ({ ...p, monthlyContribution: v }))} />
         </div>
         <div>
           <label className={LABEL_CLASS}>Guardando em (custódia)</label>
@@ -97,28 +96,30 @@ function GoalCard({ goal, onEdit, onRemove, onInvest }) {
 
   return (
     <Card>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-2">
+      <div className="flex items-start justify-between gap-2 mb-4">
+        {/* Info — min-w-0 + flex-1 impedem que o texto empurre os botões */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="w-8 h-8 rounded-lg bg-earth-100 dark:bg-earth-700 flex items-center justify-center shrink-0">
             <Target size={15} className="text-earth-500 dark:text-earth-400" />
           </div>
-          <div>
-            <p className="text-sm font-semibold text-earth-800 dark:text-earth-100">{goal.name}</p>
-            <div className="flex items-center gap-1.5">
-              <p className="text-xs text-earth-400 dark:text-earth-500">Meta: {formatCurrency(goal.targetAmount)}</p>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-earth-800 dark:text-earth-100 truncate">{goal.name}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-xs text-earth-400 dark:text-earth-500 shrink-0">Meta: {formatCurrency(goal.targetAmount)}</p>
               {goal.custody && (
                 <>
-                  <span className="text-earth-300 dark:text-earth-600">·</span>
-                  <span className="flex items-center gap-1 text-xs text-earth-400 dark:text-earth-500">
-                    <Landmark size={10} />
-                    {goal.custody}
+                  <span className="text-earth-300 dark:text-earth-600 shrink-0">·</span>
+                  <span className="flex items-center gap-1 text-xs text-earth-400 dark:text-earth-500 min-w-0">
+                    <Landmark size={10} className="shrink-0" />
+                    <span className="truncate">{goal.custody}</span>
                   </span>
                 </>
               )}
             </div>
           </div>
         </div>
-        <div className="flex gap-1">
+        {/* Botões — shrink-0 garante que nunca sejam comprimidos ou quebrem linha */}
+        <div className="flex gap-1 shrink-0 items-center">
           {!done && (
             <button
               onClick={() => onInvest(goal)}
@@ -129,8 +130,8 @@ function GoalCard({ goal, onEdit, onRemove, onInvest }) {
               Aporte
             </button>
           )}
-          <button onClick={() => onEdit(goal)} className="p-1.5 rounded-lg text-earth-400 hover:text-earth-600 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-700 transition-colors"><Pencil size={13} /></button>
-          <button onClick={() => onRemove(goal.id)} className="p-1.5 rounded-lg text-earth-400 hover:text-negative dark:hover:text-negative-dark hover:bg-earth-100 dark:hover:bg-earth-700 transition-colors"><Trash2 size={13} /></button>
+          <button onClick={() => onEdit(goal)} className="p-1.5 rounded-lg text-earth-400 hover:text-earth-600 dark:hover:text-earth-200 hover:bg-earth-100 dark:hover:bg-earth-700 transition-colors" aria-label="Editar"><Pencil size={13} /></button>
+          <button onClick={() => onRemove(goal.id)} className="p-1.5 rounded-lg text-earth-400 hover:text-negative dark:hover:text-negative-dark hover:bg-earth-100 dark:hover:bg-earth-700 transition-colors" aria-label="Excluir"><Trash2 size={13} /></button>
         </div>
       </div>
 
@@ -149,7 +150,7 @@ function GoalCard({ goal, onEdit, onRemove, onInvest }) {
 
       <div className="grid grid-cols-3 gap-3 pt-3 border-t border-earth-100 dark:border-earth-700">
         <Stat label="Falta" value={formatCurrency(remaining)} />
-        <Stat label="Aporte/mês" value={formatCurrency(goal.monthlyContribution)} />
+        <Stat label="Aporte/mês" value={goal.monthlyContribution > 0 ? formatCurrency(goal.monthlyContribution) : '—'} />
         <Stat label={done ? 'Status' : 'Previsão'} value={done ? '✓ Atingida' : estimatedDate || '—'} highlight={done} />
       </div>
     </Card>
