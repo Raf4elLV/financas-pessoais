@@ -20,12 +20,14 @@ import ResetPasswordScreen from './components/Auth/ResetPasswordScreen'
 
 // ── Clear legacy localStorage data (one-time migration) ───────────────────
 ;(function clearLegacyStorage() {
+  if (localStorage.getItem('fin_migrated_v1')) return
   const LEGACY_KEYS = ['fin_users', 'fin_session']
   LEGACY_KEYS.forEach(k => localStorage.removeItem(k))
-  // Clear per-user keys (pattern: fin_*_<uuid>)
+  // Clear per-user keys (pattern: fin_*_<uuid>), preserving active settings
   Object.keys(localStorage)
-    .filter(k => k.startsWith('fin_') && !k.startsWith('fin_onboarded_'))
+    .filter(k => k.startsWith('fin_') && !k.startsWith('fin_onboarded_') && !k.startsWith('fin_settings_'))
     .forEach(k => localStorage.removeItem(k))
+  localStorage.setItem('fin_migrated_v1', '1')
 })()
 
 // ── Loading spinner ────────────────────────────────────────────────────────
