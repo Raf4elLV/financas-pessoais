@@ -134,7 +134,14 @@ export function useAuth() {
         emailRedirectTo: window.location.origin,
       },
     })
-    if (error) return { ok: false, error: error.message }
+    if (error) {
+      const msg = error.message?.toLowerCase() || ''
+      if (msg.includes('rate limit') || msg.includes('email rate limit') || error.status === 429)
+        return { ok: false, error: 'Limite de cadastros atingido. Aguarde alguns minutos e tente novamente.' }
+      if (msg.includes('already registered') || msg.includes('user already registered'))
+        return { ok: false, error: 'Este e-mail já está cadastrado. Tente fazer login.' }
+      return { ok: false, error: error.message }
+    }
     return { ok: true }
   }
 
